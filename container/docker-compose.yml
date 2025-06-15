@@ -1,14 +1,14 @@
 volumes:
   etc_wireguard:
+  etc_certs:
 
 services:
+
   wg-easy:
-    image: ghcr.io/wg-easy/wg-easy:latest
+    image: ghcr.io/wg-easy/wg-easy:15
     container_name: wg-easy
     networks:
-        network-wg:
-          ipv4_address: 10.42.42.42
-          ipv6_address: fdcc:ad94:bacf:61a3::2a
+        - network-container
     volumes:
       - etc_wireguard:/etc/wireguard
       - /lib/modules:/lib/modules:ro
@@ -25,13 +25,46 @@ services:
       - net.ipv6.conf.all.disable_ipv6=0
       - net.ipv6.conf.all.forwarding=1
       - net.ipv6.conf.default.forwarding=1
+    environment:
+      - VIRTUAL_HOST=${HOSTNAME_VPN}
+      - LETSENCRYPT_HOST=${HOSTNAME_VPN}
+      - LETSENCRYPT_EMAIL=${EMAIL}
+      - VIRTUAL_PORT=51821
+    depends_on:
+      - nginx-proxy
+
+  acme-companion:
+    image: nginxproxy/acme-companion
+    container_name: acme-companion
+    restart: unless-stopped
+    environment:
+      - DEFAULT_EMAIL=${EMAIL}
+      - NGINX_PROXY_CONTAINER=nginx-proxy
+    depends_on:
+      - nginx-proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - etc_certs:/etc/nginx/certs
+      - /etc/nginx/vhost.d
+      - ./default_html:/usr/share/nginx/html
+    networks:
+      - network-container
+
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy:alpine
+    container_name: nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - etc_certs:/etc/nginx/certs
+      - /etc/nginx/vhost.d
+      - ./default_html:/usr/share/nginx/html
+    networks:
+      - network-container
 
 networks:
-  network-wg:
-    driver: bridge
-    enable_ipv6: true
-    ipam:
-      driver: default
-      config:
-        - subnet: 10.42.42.0/24
-        - subnet: fdcc:ad94:bacf:61a3::/64
+  network-container:
+    external: false
