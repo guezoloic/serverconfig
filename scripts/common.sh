@@ -2,7 +2,7 @@
 
 FILENAME="serverconfig"
 
-ENV_DIR="/etc/$FILENAME"
+ETC_DIR="/etc/$FILENAME"
 ENV_FILE="$ENV_DIR/.env"
 LOG="/var/log/$FILENAME.log"
 
