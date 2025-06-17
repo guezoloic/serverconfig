@@ -1,6 +1,7 @@
 volumes:
   etc_wireguard:
   etc_certs:
+  etc_acme:
 
 services:
 
@@ -47,6 +48,7 @@ services:
       - etc_certs:/etc/nginx/certs
       - /etc/nginx/vhost.d
       - ./default_html:/usr/share/nginx/html
+      - etc_acme:/etc/acme.sh
     networks:
       - network-container
 
@@ -64,6 +66,7 @@ services:
       - ./default_html:/usr/share/nginx/html
     networks:
       - network-container
+    
 
 networks:
   network-container:
