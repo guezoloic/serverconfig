@@ -1,6 +1,6 @@
 #!bin/bash
 
-source /etc/serverconfig/.env
+source /usr/local/bin/notifications.sh
 
 case "$PAM_TYPE" in
      open_session)
@@ -12,8 +12,5 @@ case "$PAM_TYPE" in
 esac
 
 if [ -n "$PAYLOAD" ] ; then
-     curl -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" \
-          -d "chat_id=$CHAT_ID" \
-          -d "text=$PLAYLOAD" \
-          -d "parse_mode=HTML"
+     send_notification "$PAYLOAD"
 fi

@@ -56,11 +56,8 @@ install_file() {
 }
 echo
 datetime_print "------------- install files -------------"
-install_file "aws-backup.sh"        "$SCRIPT_FILE"  -Dm755
-install_file "disk-monitor.sh"      "$SCRIPT_FILE"  -Dm755
-install_file "sshd-login.sh"        "$SCRIPT_FILE"  -Dm755
-install_file "telegram.sh"          "$SCRIPT_FILE"  -Dm755
-install_file "docker-compose.yml"   "$ETC_DIR"      -Dm644
+for element in scripts/*.sh; do install_file    "$(basename $element)"             "$SCRIPT_FILE"  -Dm755; done
+install_file                                    "docker-compose.yml"   "$ETC_DIR"      -Dm644
 
 create_env_variable() {
     local key="$1"
