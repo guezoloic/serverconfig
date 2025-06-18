@@ -67,8 +67,13 @@ create_env_variable() {
     local value="$2"
 
     if [[ -z "$value" ]]; then
-        datetime_print "$key not set (empty input)."
-        return
+        if grep -q "^$key=*" "$ENV_FILE" 2>/dev/null; then
+            datetime_print "$key not updated."
+            return
+        else 
+            datetime_print "$key not set (empty input)."
+            return
+        fi
     fi
 
     if grep -q "^$key=" "$ENV_FILE" 2>/dev/null; then

@@ -3,7 +3,7 @@
 FILENAME="serverconfig"
 
 ETC_DIR="/etc/$FILENAME"
-ENV_FILE="$ENV_DIR/.env"
+ENV_FILE="$ETC_DIR/.env"
 LOG="/var/log/$FILENAME.log"
 
 DATETIME_FORMAT="%d-%m-%Y %H:%M:%S"
