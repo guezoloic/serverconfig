@@ -2,7 +2,7 @@
 
 source /etc/serverconfig/.env
 
-DIR="$(cd "$(dirname "$0")" && pwd)"
+DIR="$(cd "$(dirname "$0")" &&  pwd)"
 BACKUP="$DIR/aws-bakup.bak"
 LOG="/var/log/aws-bak.log"
 

@@ -13,5 +13,5 @@ datetime_print() {
     local level="${2:-INFO}"
     local timestamp="[$(date +"$DATETIME_FORMAT")]"
 
-    echo "$timestamp - $level: $message" | tee -a "$LOG"
+    echo -e "$timestamp - $level: $message" | tee -a "$LOG"
 }
