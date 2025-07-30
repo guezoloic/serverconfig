@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source ./scripts/common.sh
+source ./libs/common.sh
 
 mkdir -p $ETC_DIR
 rm -f $LOG
@@ -75,16 +75,17 @@ info_print "\n\
         Installing scripts to $SCRIPT_FILE \n\
 --------------------------------------------------" -- false
 
-for scripts in scripts/*.sh; do
-    filename=$(basename "$scripts")
-    info_print "Moving $filename to $SCRIPT_FILE"
+for scripts in libs/*.sh scripts/*.sh; do
+    info_print "Moving $scripts to $SCRIPT_FILE"
+    output="$SCRIPT_FILE/$scripts"
 
-    install $argument "$scripts" "$SCRIPT_FILE/$filename"  -Dm755 \
-    && { info_print "$SCRIPT_FILE/$filename installed." 6; } \
-    || { info_print "$SCRIPT_FILE/$filename failed." 3; ISERROR=true; }
+    install $argument "$scripts" $output -Dm755 \
+    && { info_print "$output installed." 6; } \
+    || { info_print "$output failed." 3; ISERROR=true; }
 done
 
-for element in $SCRIPT_FILE/*.sh; do
+touch $ENV_FILE
+for element in $SCRIPT_FILE/*/*.sh; do
     bash "$element" --install
 done
 
