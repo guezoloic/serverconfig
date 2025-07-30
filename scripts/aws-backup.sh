@@ -1,12 +1,12 @@
 #!/bin/bash
 
-source /usr/local/bin/common.sh
+source /usr/local/bin/libs/common.sh
 source /etc/serverconfig/.env
 
-INSTALLED=$1
 DIR="$(cd "$(dirname "$0")" &&  pwd)"
-BACKUP="$ETC_DIR/aws-bakup.bak"
+BACKUP="$ETC_DIR/aws-backup.bak"
 
+INSTALLED=$1
 if [[ "--install" == $INSTALLED ]]; then
     info_print "\n\
 ==================================================\n\
@@ -25,7 +25,7 @@ if [[ "--install" == $INSTALLED ]]; then
         read -p "Enter value for $key: " value
         create_env_variable "$key" "$value" $BACKUP
     done
-    info_print "You can add more later by editing $BACKUP."
+    info_print "You can add more names later by editing $BACKUP."
 
     CRON_JOB="0 0 * * * $SCRIPT_FILE/aws-backup.sh"
     crontab -l | grep -F "$CRON_JOB" > /dev/null 2>&1
@@ -33,9 +33,11 @@ if [[ "--install" == $INSTALLED ]]; then
         (crontab -l 2>/dev/null; echo "$CRON_JOB") | crontab -
         info_print "Cron job added." 6
     fi
+
+    exit 0
 fi
 
-if [[ "$1" == "clean" ]] then
+if [[ "$1" == "clean" ]]; then
     info_print "Purge aws-bak files."
     rm -f $BACKUP
     exit 0
@@ -57,3 +59,6 @@ while IFS= read -r SOURCE_PATH || [ -n "$SOURCE_PATH" ]; do
         info_print "$SOURCE_PATH not found or inaccessible." 3
     fi
 done < "$BACKUP"
+
+source /usr/local/bin/libs/notifications.sh 
+send_notification "All AWS-backup file have been linked"
