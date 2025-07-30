@@ -1,24 +1,33 @@
-#!bin/bash
+#!/bin/bash
 
-source /usr/local/bin/notifications.sh
+source /usr/local/bin/libs/common.sh
+source /etc/serverconfig/.env
 
-# initialize_config() {
-#     local isInstalling="$1"
-#     local target_file="$2"
-#     local crontab_configuration="$3"
-#     local link_path="$4"
+INSTALLED=$1
+if [[ "--install" == $INSTALLED ]]; then 
+    info_print "\n\
+==================================================\n\
+            sshd-login Installation\n\
+--------------------------------------------------"
 
-#     if [[ $isInstalling != "--install" ]]; then
-#         return;
-#     fi
+    login='session optional pam_exec.so /usr/local/bin/scripts/sshd-login.sh'
+    file='/etc/pam.d/common-session'
 
-#     echo "$crontab_configuration $0" | crontab -
-# }
+    if [[ ! -f "$file" ]]; then
+        info_print "$file doesn't found." 3
+        exit 1
+    fi
 
-# install_para="$1"
-# if [[ $install_para == "--install" ]]; then
+    if ! grep -Fxq "$login" "$file"; then
+        echo "$login" >> "$file"
+        info_print "login command added to $file." 6
+    else
+        info_print "login command already added to $file." 2
+    fi
+    exit 0; 
+fi
 
-# fi
+source /usr/local/bin/libs/notifications.sh
 
 case "$PAM_TYPE" in
      open_session)
