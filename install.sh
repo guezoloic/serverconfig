@@ -1,137 +1,97 @@
 #!/bin/bash
 
-source "./scripts/common.sh"
+source ./scripts/common.sh
 
-SCRIPT_FILE="/usr/local/bin"
+mkdir -p $ETC_DIR
+rm -f $LOG
 
-create_env_variable() {
-    local key="$1"
-    local value="$2"
+ISERROR=false
+INSTALLED_DEP=( $(grep -v '^#' $(pwd)/requirements.txt) )
 
-    if [[ -z "$value" ]]; then
-        if grep -q "^$key=*" "$ENV_FILE" 2>/dev/null; then
-            info_print "$key not updated."
-            return
-        else 
-            info_print "$key not set (empty input)." 1
-            return
-        fi
-    fi
-
-    if grep -q "^$key=" "$ENV_FILE" 2>/dev/null; then
-        if $AUTO_CONFIRM; then
-            yn="y"
-        else
-            read -p "$key already set, overwrite? (y/N): " yn
-        fi
-        case "$yn" in
-            [Yy]*) 
-                sed -i "s/^$key=.*/$key=$value/" "$ENV_FILE"
-                info_print "$key updated."
-                ;;
-            *) 
-                info_print "$key not changed."
-                ;;
-        esac
-    else
-        echo "$key=$value" >> "$ENV_FILE"
-        info_print "$key \e[32mset\e[0m."
-    fi
-}
-
-install_file() {
-    local filename="$1"
-    local pathname="$2"
-    local argument="${3:--Dm755}"
-    
-    info_print "Installing $filename to $pathname..."
-
-    if [[ ! -f "scripts/$filename" ]]; then
-        info_print "Source file scripts/$filename not found." "\e[31mERROR\e[0m"
-        exit 1
-    fi
-    
-    if [[ -e "$pathname/$filename" ]]; then
-        if $AUTO_CONFIRM; then
-            yn="y"
-        else
-            read -p "$pathname/$filename already set, overwrite? (y/N): " yn
-        fi
-        case "$yn" in
-            [Yy]*)
-            ;;
-            *) 
-                info_print "$pathname/$filename not changed."
-                return
-            ;;
-        esac
-    fi
-
-    install $argument "scripts/$filename" "$pathname/$filename" && \
-        info_print "$filename \e[32minstalled.\e[0m" || \
-        { info_print "Error while installing $filename" "\e[31mERROR\e[0m"; exit 1; }
-}
-
-AUTO_CONFIRM=false
-[[ "$1" == "--true" ]] && AUTO_CONFIRM=true
-
-INSTALLED_PROG=("curl")
-for prog in ${INSTALLED_PROG[@]}; do
-    echo -n "Verifing $prog... "
-    if ! command -v $prog &> "/dev/null"; then
-        echo -e "\e[31mError: not installed\e[0m" 
-        exit 1
-    fi
-    echo -e "\e[32mDone\e[0m"
-done
 
 if [[ $EUID -ne 0 ]]; then
     echo "The script needs to run as root."
     exit 1
 fi
 
-touch "$LOG" || { echo "\e[31mCannot create log file $LOG\e[0m"; exit 1; }
+touch "$LOG" || ISERROR=true
+if $ISERROR; then 
+    info_print "Failed to Create $LOG" 3 false; exit 1 
+fi
+
 chmod 644 "$LOG"
 
-info_print "Starting ServerConfig Installation v1.0.0"
-
-mkdir -p "$ETC_DIR" && \
-info_print "$ETC_DIR ensured."
-
-info_print "Installing scripts to $SCRIPT_FILE..."
-
-echo
-info_print "------------- Install Files -------------"
-for element in scripts/*.sh; do install_file    "$(basename $element)"             "$SCRIPT_FILE"  -Dm755; done
-install_file                                    "docker-compose.yml"   "$ETC_DIR"      -Dm644
+info_print "\n\
+==================================================\n\
+         ServerConfig Installation v1.0.0\n\
+--------------------------------------------------"
+info_print "License     : MIT"
+info_print "Repository  : https://github.com/guezoloic/serverconfig"
+info_print "Date        : Installation $(date '+%Y-%m-%d %H:%M:%S')"
 
 
-echo
-info_print "--------- Define .env variables ---------"
+if $ISERROR; then 
+    info_print "Failed to move some scripts to $SCRIPT_FILE, See log $LOG" 3 false; exit 1 
+fi
 
-ENV_LIST=("AWS" "TELEGRAM_CHAT_ID" "TELEGRAM_TOKEN" "EMAIL" "WG_HOSTNAME_VPN")
+info_print "\n\
+==================================================\n\
+   Installing config files to $ETC_DIR\n\
+--------------------------------------------------" -- false
 
-touch "$ENV_FILE"
-for env in "${ENV_LIST[@]}"; do
-    read -p "Enter value for $env: " value
-    create_env_variable "$env" "$value"
+for config in config/*; do
+    filename=$(basename "$config")
+    info_print "Moving $filename to $SCRIPT_FILE"
+
+    install $argument "$config" "$ETC_DIR/$filename"  -Dm755 \
+    && { info_print "$ETC_DIR/$filename installed." 6; } \
+    || { info_print "$ETC_DIR/$filename failed." 3; ISERROR=true; }
 done
 
-while true; do
-    read -p "Add another env variable? (key or leave empty to quit): " key
-    [[ -z "$key" ]] && break
-    read -p "Enter value for $key: " value
-    create_env_variable "$key" "$value"
+if $ISERROR; then 
+    info_print "Failed to move some scripts to $ENV_FILE, See log $LOG" 3 false; exit 1 
+fi
+
+info_print "\n\
+==================================================\n\
+              Checking dependencies \n\
+--------------------------------------------------" -- false
+
+for dep in ${INSTALLED_DEP[@]}; do
+    if command -v "$dep" &>/dev/null; then
+        info_print "$dep is installed." 6
+    else
+        info_print "$dep is not installed." 3
+        ISERROR=true
+    fi
 done
 
-echo
-info_print "---------- Script Installation ----------"
-for element in /usr/local/bin/*.sh; do
+if $ISERROR; then 
+    info_print "Some Dependencies are missing. Please check requirements.txt." 3 false; exit 1 
+fi
+
+info_print "\n\
+==================================================\n\
+        Installing scripts to $SCRIPT_FILE \n\
+--------------------------------------------------" -- false
+
+for scripts in scripts/*.sh; do
+    filename=$(basename "$scripts")
+    info_print "Moving $filename to $SCRIPT_FILE"
+
+    install $argument "$scripts" "$SCRIPT_FILE/$filename"  -Dm755 \
+    && { info_print "$SCRIPT_FILE/$filename installed." 6; } \
+    || { info_print "$SCRIPT_FILE/$filename failed." 3; ISERROR=true; }
+done
+
+for element in $SCRIPT_FILE/*.sh; do
     bash "$element" --install
 done
 
-echo
-info_print "--------- Installation Complete ---------"
+info_print "\n\
+==================================================\n\
+             Installation Complete\n\
+--------------------------------------------------" -- false
 info_print "All config files are in $ETC_DIR"
 info_print "All scripts are in $SCRIPT_FILE"
 
