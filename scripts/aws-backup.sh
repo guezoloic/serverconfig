@@ -1,40 +1,44 @@
 #!/bin/bash
 
-source /usr/local/bin/notifications.sh
 source /usr/local/bin/common.sh
+source /etc/serverconfig/.env
 
+INSTALLED=$1
 DIR="$(cd "$(dirname "$0")" &&  pwd)"
-BACKUP="$DIR/aws-bakup.bak"
+BACKUP="$ETC_DIR/aws-bakup.bak"
 
-SYNCED_FILES=""
+if [[ "--install" == $INSTALLED ]]; then
+    info_print "\n\
+==================================================\n\
+            AWS-backup Installation\n\
+--------------------------------------------------"
 
+    read -p "Enter aws server: " AWS_client
+    create_env_variable "AWS" "$AWS_client"
+    
+    touch "$BACKUP"
+    info_print "$BACKUP created." 
 
-if [[ "$1" == "clean" ]] then
-        info_print "Cleaning the S3 bucket: s3://$AWS" | tee -a "$LOG"
-        aws s3 rm "s3://$AWS/" --recursive | tee -a "$LOG"
+    while true; do
+        read -p "Add backup directory or file name (key or leave empty to quit): " key
+        [[ -z "$key" ]] && break
+        read -p "Enter value for $key: " value
+        create_env_variable "$key" "$value" $BACKUP
+    done
+    info_print "You can add more later by editing $BACKUP."
 
-        if [ $? -ne 0 ]; then
-            info_print "Failed to clean the S3 bucket" 3
-            exit 1
-        fi
-
-        info_print "Bucket cleaned successfully."
-        exit 0
-    else
-        info_print "Purge aws-bak files."
-        rm -f $BACKUP $LOG $DIR/aws-bak.sh
-        exit 0
+    CRON_JOB="0 0 * * * $SCRIPT_FILE/aws-backup.sh"
+    crontab -l | grep -F "$CRON_JOB" > /dev/null 2>&1
+    if ! crontab -l | grep -Fq "$CRON_JOB"; then
+        (crontab -l 2>/dev/null; echo "$CRON_JOB") | crontab -
+        info_print "Cron job added." 6
     fi
 fi
 
-if [ -n "$1" ]; then
-    AWS="$1"
-fi
-
-if [ ! -e "$BACKUP" ]; then
-    touch "$BACKUP"
-    info_print "$BACKUP created. Please only include dirnames." 5
-    exit 1
+if [[ "$1" == "clean" ]] then
+    info_print "Purge aws-bak files."
+    rm -f $BACKUP
+    exit 0
 fi
 
 while IFS= read -r SOURCE_PATH || [ -n "$SOURCE_PATH" ]; do
@@ -49,18 +53,7 @@ while IFS= read -r SOURCE_PATH || [ -n "$SOURCE_PATH" ]; do
             info_print "Error while syncing $SOURCE_PATH to the AWS server." 3
             exit 1
         fi
-
-        SYNCED_FILES="$SYNCED_FILES\n$SOURCE_PATH"
     else
         info_print "$SOURCE_PATH not found or inaccessible." 3
     fi
 done < "$BACKUP"
-
-if [ -n "$SYNCED_FILES" ]; then
-    info_print "Files synced:$SYNCED_FILES"
-else
-    info_print "No files synced."  3
-    exit 0;
-fi
-
-info_print "All files synced to AWS."

@@ -91,7 +91,7 @@ done
 info_print "\n\
 ==================================================\n\
              Installation Complete\n\
---------------------------------------------------" -- false
+--------------------------------------------------" 
 info_print "All config files are in $ETC_DIR"
 info_print "All scripts are in $SCRIPT_FILE"
 

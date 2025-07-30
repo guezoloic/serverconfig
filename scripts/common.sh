@@ -37,3 +37,39 @@ info_print() {
     else echo -e "$output"
     fi
 }
+
+create_env_variable() {
+    local key="$1"
+    local value="$2"
+    local file="${3:-$ENV_FILE}"
+
+    if [[ -z "$value" ]]; then
+        if grep -q "^$key=*" "$file" 2>/dev/null; then
+            info_print "$key not updated."
+            return
+        else 
+            info_print "$key not set (empty input)."
+            return
+        fi
+    fi
+
+    if grep -q "^$key=" "$file" 2>/dev/null; then
+        if $AUTO_CONFIRM; then
+            yn="y"
+        else
+            read -p "$key already set, overwrite? (y/N): " yn
+        fi
+        case "$yn" in
+            [Yy]*) 
+                sed -i "s/^$key=.*/$key=$value/" "$file"
+                info_print "$key updated."
+                ;;
+            *) 
+                info_print "$key not changed."
+                ;;
+        esac
+    else
+        echo "$key=$value" >> "$file"
+        info_print "$key \e[32mset\e[0m."
+    fi
+}
