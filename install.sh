@@ -10,10 +10,10 @@ create_env_variable() {
 
     if [[ -z "$value" ]]; then
         if grep -q "^$key=*" "$ENV_FILE" 2>/dev/null; then
-            datetime_print "$key not updated."
+            info_print "$key not updated."
             return
         else 
-            datetime_print "$key not set (empty input)."
+            info_print "$key not set (empty input)." 1
             return
         fi
     fi
@@ -27,15 +27,15 @@ create_env_variable() {
         case "$yn" in
             [Yy]*) 
                 sed -i "s/^$key=.*/$key=$value/" "$ENV_FILE"
-                datetime_print "$key updated."
+                info_print "$key updated."
                 ;;
             *) 
-                datetime_print "$key not changed."
+                info_print "$key not changed."
                 ;;
         esac
     else
         echo "$key=$value" >> "$ENV_FILE"
-        datetime_print "$key \e[32mset\e[0m."
+        info_print "$key \e[32mset\e[0m."
     fi
 }
 
@@ -44,10 +44,10 @@ install_file() {
     local pathname="$2"
     local argument="${3:--Dm755}"
     
-    datetime_print "Installing $filename to $pathname..."
+    info_print "Installing $filename to $pathname..."
 
     if [[ ! -f "scripts/$filename" ]]; then
-        datetime_print "Source file scripts/$filename not found." "\e[31mERROR\e[0m"
+        info_print "Source file scripts/$filename not found." "\e[31mERROR\e[0m"
         exit 1
     fi
     
@@ -61,21 +61,21 @@ install_file() {
             [Yy]*)
             ;;
             *) 
-                datetime_print "$pathname/$filename not changed."
+                info_print "$pathname/$filename not changed."
                 return
             ;;
         esac
     fi
 
     install $argument "scripts/$filename" "$pathname/$filename" && \
-        datetime_print "$filename \e[32minstalled.\e[0m" || \
-        { datetime_print "Error while installing $filename" "\e[31mERROR\e[0m"; exit 1; }
+        info_print "$filename \e[32minstalled.\e[0m" || \
+        { info_print "Error while installing $filename" "\e[31mERROR\e[0m"; exit 1; }
 }
 
 AUTO_CONFIRM=false
 [[ "$1" == "--true" ]] && AUTO_CONFIRM=true
 
-INSTALLED_PROG=("curl" "aws")
+INSTALLED_PROG=("curl")
 for prog in ${INSTALLED_PROG[@]}; do
     echo -n "Verifing $prog... "
     if ! command -v $prog &> "/dev/null"; then
@@ -93,21 +93,21 @@ fi
 touch "$LOG" || { echo "\e[31mCannot create log file $LOG\e[0m"; exit 1; }
 chmod 644 "$LOG"
 
-datetime_print "Starting ServerConfig Installation v1.0.0"
+info_print "Starting ServerConfig Installation v1.0.0"
 
 mkdir -p "$ETC_DIR" && \
-datetime_print "$ETC_DIR ensured."
+info_print "$ETC_DIR ensured."
 
-datetime_print "Installing scripts to $SCRIPT_FILE..."
+info_print "Installing scripts to $SCRIPT_FILE..."
 
 echo
-datetime_print "------------- Install Files -------------"
+info_print "------------- Install Files -------------"
 for element in scripts/*.sh; do install_file    "$(basename $element)"             "$SCRIPT_FILE"  -Dm755; done
 install_file                                    "docker-compose.yml"   "$ETC_DIR"      -Dm644
 
 
 echo
-datetime_print "--------- Define .env variables ---------"
+info_print "--------- Define .env variables ---------"
 
 ENV_LIST=("AWS" "TELEGRAM_CHAT_ID" "TELEGRAM_TOKEN" "EMAIL" "WG_HOSTNAME_VPN")
 
@@ -125,14 +125,14 @@ while true; do
 done
 
 echo
-datetime_print "---------- Script Installation ----------"
+info_print "---------- Script Installation ----------"
 for element in /usr/local/bin/*.sh; do
     bash "$element" --install
 done
 
 echo
-datetime_print "--------- Installation Complete ---------"
-datetime_print "All config files are in $ETC_DIR"
-datetime_print "All scripts are in $SCRIPT_FILE"
+info_print "--------- Installation Complete ---------"
+info_print "All config files are in $ETC_DIR"
+info_print "All scripts are in $SCRIPT_FILE"
 
 echo "Log file written at: $LOG"

@@ -1,40 +1,27 @@
 #!/bin/bash
 
-source /etc/serverconfig/.env
+source /usr/local/bin/notifications.sh
+source /usr/local/bin/common.sh
 
 DIR="$(cd "$(dirname "$0")" &&  pwd)"
 BACKUP="$DIR/aws-bakup.bak"
-LOG="/var/log/aws-bak.log"
 
 SYNCED_FILES=""
 
-date_print() {
-    echo -n "$(date +"%d-%m-%Y %H:%M:%S") - " | tee -a $LOG
-}
 
-error_print() {
-    date_print
-    if [ "$1" == "true" ]; then
-        echo "Backup error $2 -/> s3://$AWS : " | tee -a "$LOG"
-    else
-        echo "Backup succeeded --> s3://$AWS : " | tee -a "$LOG"
-    fi
-}
-
-if [ "$1" == "clean" ]; then
-    if [ "$2" == "aws" ]; then
-        echo "Cleaning the S3 bucket: s3://$AWS" | tee -a "$LOG"
+if [[ "$1" == "clean" ]] then
+        info_print "Cleaning the S3 bucket: s3://$AWS" | tee -a "$LOG"
         aws s3 rm "s3://$AWS/" --recursive | tee -a "$LOG"
 
         if [ $? -ne 0 ]; then
-            error_print true "Failed to clean the S3 bucket"
+            info_print "Failed to clean the S3 bucket" 3
             exit 1
         fi
 
-        echo "Bucket cleaned successfully." | tee -a "$LOG"
+        info_print "Bucket cleaned successfully."
         exit 0
     else
-        echo "Purge aws-bak files."
+        info_print "Purge aws-bak files."
         rm -f $BACKUP $LOG $DIR/aws-bak.sh
         exit 0
     fi
@@ -46,8 +33,7 @@ fi
 
 if [ ! -e "$BACKUP" ]; then
     touch "$BACKUP"
-    error_print true "$BACKUP"
-    echo "$BACKUP created. Please include only the dirname in this file." | tee -a "$LOG"
+    info_print "$BACKUP created. Please only include dirnames." 5
     exit 1
 fi
 
@@ -60,24 +46,21 @@ while IFS= read -r SOURCE_PATH || [ -n "$SOURCE_PATH" ]; do
         aws s3 sync "$SOURCE_PATH" "s3://$AWS/$(basename "$SOURCE_PATH")" --delete > /dev/null 2>&1
 
         if [ $? -ne 0 ]; then
-            error_print true "$SOURCE_PATH"
-            echo "Error while syncing $SOURCE_PATH to the AWS server." | tee -a "$LOG"
+            info_print "Error while syncing $SOURCE_PATH to the AWS server." 3
             exit 1
         fi
 
         SYNCED_FILES="$SYNCED_FILES\n$SOURCE_PATH"
     else
-        error_print true "$SOURCE_PATH"
-        echo "$SOURCE_PATH not found or inaccessible." | tee -a "$LOG"
+        info_print "$SOURCE_PATH not found or inaccessible." 3
     fi
 done < "$BACKUP"
 
 if [ -n "$SYNCED_FILES" ]; then
-    error_print false ""
-    echo -e "Files synced:$SYNCED_FILES" | tee -a "$LOG"
+    info_print "Files synced:$SYNCED_FILES"
 else
-    echo "No files synced." | tee -a "$LOG"
+    info_print "No files synced."  3
     exit 0;
 fi
 
-echo "All files synced to AWS." | tee -a "$LOG"
+info_print "All files synced to AWS."
