@@ -32,7 +32,7 @@ if [[ "--install" == $INSTALLED ]]; then
     done
     info_print "You can add more names later by editing $BACKUP."
 
-    CRON_JOB="0 0 * * * $SCRIPT_FILE/aws-backup.sh"
+    CRON_JOB="0 0 * * * $SCRIPT_FILE/scripts/aws-backup.sh"
     crontab -l | grep -F "$CRON_JOB" > /dev/null 2>&1
     if ! crontab -l | grep -Fq "$CRON_JOB"; then
         (crontab -l 2>/dev/null; echo "$CRON_JOB") | crontab -

@@ -9,7 +9,7 @@ if [[ "--install" == $INSTALLED ]]; then
 ==================================================\n\
             disk-monitor Installation\n\
 --------------------------------------------------"
-    CRON_JOB="0 3 * * 1 $SCRIPT_FILE/disk-monitor.sh"
+    CRON_JOB="0 3 * * 1 $SCRIPT_FILE/scripts/disk-monitor.sh"
     crontab -l | grep -F "$CRON_JOB" > /dev/null 2>&1
     if ! crontab -l | grep -Fq "$CRON_JOB"; then
         (crontab -l 2>/dev/null; echo "$CRON_JOB") | crontab -
