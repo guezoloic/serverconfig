@@ -15,15 +15,18 @@ if [[ "--install" == $INSTALLED ]]; then
 
     read -p "Enter aws server: " AWS_client
     create_env_variable "AWS" "$AWS_client"
-    
+
+    read -p "Enter endpoint server (leave empty to not define it): " ENDPOINT_server
+    [[ ! -n $ENDPOINT_server ]] && create_env_variable "ENDPOINT" "$ENDPOINT_server"
+
     info_print "AWS configuration."
     aws configure
 
     touch "$BACKUP"
-    info_print "$BACKUP created." 
+    info_print "$BACKUP created."
 
     while true; do
-        read -p "Add backup directory or file name (key or leave empty to quit): " key
+        read -p "Add backup directory or file name (leave empty to quit): " key
         [[ -z "$key" ]] && break
         create_raw_line_variable "$key" $BACKUP
     done
@@ -35,7 +38,7 @@ if [[ "--install" == $INSTALLED ]]; then
         (crontab -l 2>/dev/null; echo "$CRON_JOB") | crontab -
         info_print "Cron job added." 6
     fi
-
+    
     exit 0
 fi
 
@@ -46,27 +49,40 @@ if [[ "$1" == "clean" ]]; then
 fi
 
 while IFS= read -r SOURCE_PATH || [ -n "$SOURCE_PATH" ]; do
-    if [ -z "$SOURCE_PATH" ] || [[ "$SOURCE_PATH" =~ ^[[:space:]]*$ ]]; then
+    if [[ -z "$SOURCE_PATH" || "$SOURCE_PATH" =~ ^[[:space:]]*$ ]]; then
         continue
     fi
 
-    if [ -d "$SOURCE_PATH" ] || [ -f "$SOURCE_PATH" ]; then
-        aws_cmd=(aws s3 sync "$SOURCE_PATH" "s3://$BUCKET/$(basename "$SOURCE_PATH")" --profile scaleway --delete)
+    if [[ -d "$SOURCE_PATH" || -f "$SOURCE_PATH" ]]; then
+        DEST="s3://$AWS/$(basename "$SOURCE_PATH")"
+
+        if [[ -d "$SOURCE_PATH" ]]; then
+            info_print "Syncing directory: $SOURCE_PATH → $DEST"
+            aws_cmd=(aws s3 sync "$SOURCE_PATH" "$DEST" --delete)
+        elif [[ -f "$SOURCE_PATH" ]]; then
+            info_print "Uploading file: $SOURCE_PATH → $DEST"
+            aws_cmd=(aws s3 cp "$SOURCE_PATH" "$DEST")
+        fi
 
         if [[ -n "$ENDPOINT" ]]; then
+            info_print "Using custom endpoint: $ENDPOINT"
             aws_cmd+=("--endpoint-url" "$ENDPOINT")
         fi
 
-        $aws_cmd
+        
+        "${aws_cmd[@]}"
 
         if [ $? -ne 0 ]; then
             info_print "Error while syncing $SOURCE_PATH to the AWS server." 3
             exit 1
+
+        else 
+            info_print "Successfully synced $SOURCE_PATH" 6
         fi
     else
         info_print "$SOURCE_PATH not found or inaccessible." 3
     fi
 done < "$BACKUP"
 
-source /usr/local/bin/libs/notifications.sh 
+source /usr/local/bin/libs/notifications.sh
 send_notification "All AWS-backup file have been linked"

@@ -76,9 +76,9 @@ create_raw_line_variable() {
     local file="$2"
 
     if grep -Fxq "$line" "$file" 2>/dev/null; then
-        info_print "'$line' already defined as raw line."
+        info_print "'$line' already defined as raw line." 2
     else
         echo "$line" >> "$file"
-        info_print "'$line' added as raw line."
+        info_print "'$line' added as raw line." 6
     fi
 }
