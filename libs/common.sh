@@ -45,31 +45,40 @@ create_env_variable() {
 
     if [[ -z "$value" ]]; then
         if grep -q "^$key=*" "$file" 2>/dev/null; then
-            info_print "$key not updated."
+            info_print "$key not updated." 2
             return
         else 
-            info_print "$key not set (empty input)."
+            info_print "$key not set (empty input)." 2
             return
         fi
     fi
 
-    if grep -q "^$key=" "$file" 2>/dev/null; then
-        if $AUTO_CONFIRM; then
-            yn="y"
-        else
-            read -p "$key already set, overwrite? (y/N): " yn
-        fi
+    if grep -Eq "^${key}=" "$file" 2>/dev/null; then
+        read -p "$key already set, overwrite? (y/N): " yn
+
         case "$yn" in
             [Yy]*) 
                 sed -i "s/^$key=.*/$key=$value/" "$file"
-                info_print "$key updated."
+                info_print "$key updated." 6
                 ;;
             *) 
-                info_print "$key not changed."
+                info_print "$key not changed." 2
                 ;;
         esac
     else
         echo "$key=$value" >> "$file"
-        info_print "$key \e[32mset\e[0m."
+        info_print "$key set." 6
+    fi
+}
+
+create_raw_line_variable() {
+    local line="$1"
+    local file="$2"
+
+    if grep -Fxq "$line" "$file" 2>/dev/null; then
+        info_print "'$line' already defined as raw line."
+    else
+        echo "$line" >> "$file"
+        info_print "'$line' added as raw line."
     fi
 }
