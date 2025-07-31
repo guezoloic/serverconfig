@@ -16,14 +16,16 @@ if [[ "--install" == $INSTALLED ]]; then
     read -p "Enter aws server: " AWS_client
     create_env_variable "AWS" "$AWS_client"
     
+    info_print "AWS configuration."
+    aws configure
+
     touch "$BACKUP"
     info_print "$BACKUP created." 
 
     while true; do
         read -p "Add backup directory or file name (key or leave empty to quit): " key
         [[ -z "$key" ]] && break
-        read -p "Enter value for $key: " value
-        create_env_variable "$key" "$value" $BACKUP
+        create_raw_line_variable "$key" $BACKUP
     done
     info_print "You can add more names later by editing $BACKUP."
 
@@ -49,7 +51,13 @@ while IFS= read -r SOURCE_PATH || [ -n "$SOURCE_PATH" ]; do
     fi
 
     if [ -d "$SOURCE_PATH" ] || [ -f "$SOURCE_PATH" ]; then
-        aws s3 sync "$SOURCE_PATH" "s3://$AWS/$(basename "$SOURCE_PATH")" --delete > /dev/null 2>&1
+        aws_cmd=(aws s3 sync "$SOURCE_PATH" "s3://$BUCKET/$(basename "$SOURCE_PATH")" --profile scaleway --delete)
+
+        if [[ -n "$ENDPOINT" ]]; then
+            aws_cmd+=("--endpoint-url" "$ENDPOINT")
+        fi
+
+        $aws_cmd
 
         if [ $? -ne 0 ]; then
             info_print "Error while syncing $SOURCE_PATH to the AWS server." 3
