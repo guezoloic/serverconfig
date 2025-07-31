@@ -2,11 +2,12 @@
 
 INSTALLED=$1
 if [[ "--install" == $INSTALLED ]]; then 
+    source /usr/local/bin/libs/common.sh
+    
     info_print "\n\
 ==================================================\n\
-            wireguard Installation\n\
+            docker-compose Installation\n\
 --------------------------------------------------"
-    source /usr/local/bin/libs/common.sh
     
     if [[ -f "$ETC_DIR/docker-compose.yml" ]]; then
         docker compose up -d -f $ETC_DIR/docker-compose.yml && \
