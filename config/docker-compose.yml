@@ -68,6 +68,23 @@ services:
     networks:
       - network-container
     
+# synapse:
+#     image: matrixdotorg/synapse:latest
+#     container_name: synapse
+#     restart: unless-stopped
+#     networks:
+#       - network-container
+#     volumes:
+#       - ./data:/data
+#     environment:
+#       - SYNAPSE_CONFIG_PATH=/data/homeserver.yaml
+#       - VIRTUAL_HOST=notify.guezoloic.com
+#       - LETSENCRYPT_HOST=notify.guezoloic.com
+#       - LETSENCRYPT_EMAIL=${EMAIL}
+#       - VIRTUAL_PORT=8008
+#     expose:
+#       - "8008"
+
 
 networks:
   network-container:

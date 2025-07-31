@@ -17,7 +17,7 @@ if [[ "--install" == $INSTALLED ]]; then
     create_env_variable "AWS" "$AWS_client"
 
     read -p "Enter endpoint server (leave empty to not define it): " ENDPOINT_server
-    [[ ! -n $ENDPOINT_server ]] && create_env_variable "ENDPOINT" "$ENDPOINT_server"
+    [[ -n $ENDPOINT_server ]] && create_env_variable "ENDPOINT" "$ENDPOINT_server"
 
     info_print "AWS configuration."
     aws configure
