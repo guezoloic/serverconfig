@@ -89,6 +89,7 @@ services:
   volume-backup:
     image: offen/docker-volume-backup
     restart: always
+    container_name: volume-backup
     environment:
       BACKUP_NAME: etc_wireguard
       BACKUP_CRON_EXPRESSION: "0 0 * * *"
