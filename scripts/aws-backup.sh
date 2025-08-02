@@ -74,15 +74,24 @@ while IFS= read -r SOURCE_PATH || [ -n "$SOURCE_PATH" ]; do
 
         if [ $? -ne 0 ]; then
             info_print "Error while syncing $SOURCE_PATH to the AWS server." 3
+            BACKUPSUCCESSED=false
             exit 1
 
         else 
             info_print "Successfully synced $SOURCE_PATH" 6
+            BACKUPSUCCESSED=true 
         fi
     else
         info_print "$SOURCE_PATH not found or inaccessible." 3
+        BACKUPSUCCESSED=false
+        exit 1
     fi
 done < "$BACKUP"
 
 source /usr/local/bin/libs/notifications.sh
-send_notification "All AWS-backup file have been linked"
+
+if [[ "$BACKUP_SUCCESS" == true ]]; then
+    send_notification "<b>AWS Backup:</b> All files successfully backed up."
+else
+    send_notification "<b>AWS Backup:</b> One or more files failed to back up. Check the log for details."
+fi
