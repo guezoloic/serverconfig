@@ -19,6 +19,13 @@ Ensure you have the following **programs** installed:
 - **aws**
 - **docker** 
 
+## Paths
+
+- /usr/local/bin/scripts
+- /usr/local/bin/libs
+- /var/log/serverconfig.log
+- /etc/serverconfig
+
 ## Installation
 
 ```bash
