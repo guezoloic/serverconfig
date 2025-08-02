@@ -31,10 +31,10 @@ source /usr/local/bin/libs/notifications.sh
 
 case "$PAM_TYPE" in
   open_session)
-    PAYLOAD="<b>Login Event</b>\nUser <code>$PAM_USER</code> logged in from <code>$PAM_RHOST</code> at <i>$(date)</i>."
+    PAYLOAD=$(printf "<b>Login Event</b>\nUser <code>%s</code> logged in from <code>%s</code> at <i>%s</i>." "$PAM_USER" "$PAM_RHOST" "$(date)")
     ;;
   close_session)
-    PAYLOAD="<b>Logout Event</b>\nUser <code>$PAM_USER</code> logged out from <code>$PAM_RHOST</code> at <i>$(date)</i>."
+    PAYLOAD=$(printf "<b>Logout Event</b>\nUser <code>%s</code> logged out from <code>%s</code> at <i>%s</i>." "$PAM_USER" "$PAM_RHOST" "$(date)")
     ;;
 esac
 
