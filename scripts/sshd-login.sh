@@ -30,12 +30,12 @@ fi
 source /usr/local/bin/libs/notifications.sh
 
 case "$PAM_TYPE" in
-     open_session)
-	     PAYLOAD="$PAM_USER logged in (remote host: $PAM_RHOST) at $(date)."
-         ;;
-     close_session)
-         PAYLOAD="$PAM_USER logged out (remote host: $PAM_RHOST) at $(date)."
-         ;;
+  open_session)
+    PAYLOAD="<b>Login Event</b>\nUser <code>$PAM_USER</code> logged in from <code>$PAM_RHOST</code> at <i>$(date)</i>."
+    ;;
+  close_session)
+    PAYLOAD="<b>Logout Event</b>\nUser <code>$PAM_USER</code> logged out from <code>$PAM_RHOST</code> at <i>$(date)</i>."
+    ;;
 esac
 
 if [ -n "$PAYLOAD" ] ; then

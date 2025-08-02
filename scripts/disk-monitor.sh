@@ -27,8 +27,8 @@ send_notification "$(
         usage = $5;
         gsub("%", "", usage);
         if (usage > max) {
-            printf "<b>🚨 WARNING:</b>\nDisk usage is at %d%%. which exceed the treshold of %d%%.\n\n", usage, max;
-        } 
-        printf "<b>💾 Disk Usage Information:</b>\nTotal Size: %s, Used: %s, Available: %s\n\n", $2, $3, $4;
+            printf "<b>Warning:</b>\nDisk usage is at <code>%d%%</code>, which exceeds the threshold of <code>%d%%</code>.\n\n", usage, max;
+        }
+        printf "<b>Disk Usage Information:</b>\nTotal: <code>%s</code>, Used: <code>%s</code>, Available: <code>%s</code>\n", $2, $3, $4;
     }'
 )"
