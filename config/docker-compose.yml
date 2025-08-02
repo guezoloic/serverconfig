@@ -88,9 +88,10 @@ services:
 
   volume-backup:
     image: offen/docker-volume-backup
+    restart: always
     environment:
       BACKUP_NAME: etc_wireguard
-      BACKUP_CRON_EXPRESSION: "0 3 * * *"
+      BACKUP_CRON_EXPRESSION: "0 0 * * *"
       S3_BUCKET: ${AWS}
       S3_ENDPOINT: ${ENDPOINT}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
