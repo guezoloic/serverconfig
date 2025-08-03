@@ -22,6 +22,9 @@ if [[ "--install" == $INSTALLED ]]; then
     info_print "AWS configuration."
     aws configure
 
+    create_env_variable AWS_ACCESS_KEY_ID $(aws configure get aws_access_key_id)
+    create_env_variable AWS_SECRET_ACCESS_KEY $(aws configure get aws_secret_access_key)
+
     touch "$BACKUP"
     info_print "$BACKUP created."
 

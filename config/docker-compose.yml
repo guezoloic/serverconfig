@@ -1,11 +1,25 @@
 volumes:
   etc_wireguard:
   etc_certs:
-  backup_data:
   # save certifcate
   etc_acme:
 
 services:
+  backup:
+    image: jareware/docker-volume-backup
+    container_name: backup-docker-container
+    restart: unless-stopped
+    environment:
+      AWS_S3_BUCKET_NAME: ${S3_BUCKET}
+      AWS_EXTRA_ARGS: --endpoint ${ENDPOINT}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      BACKUP_CRON_EXPRESSION: "0 0 * * *"
+    volumes:
+      - etc_wireguard:/backup/etc_wireguard:ro
+      - etc_certs:/backup/etc_certs:ro
+      - etc_acme:/backup/etc_acme:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
 
   wg-easy:
     image: ghcr.io/wg-easy/wg-easy:15
@@ -18,6 +32,8 @@ services:
     ports:
       - "51820:51820/udp"
       - "51821:51821/tcp"
+    labels:
+      - "docker-volume-backup.stop-during-backup=true"
     restart: unless-stopped
     cap_add:
       - NET_ADMIN
@@ -45,6 +61,8 @@ services:
       - NGINX_PROXY_CONTAINER=nginx-proxy
     depends_on:
       - nginx-proxy
+    labels:
+      - "docker-volume-backup.stop-during-backup=true"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - etc_certs:/etc/nginx/certs
@@ -61,6 +79,8 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    labels:
+      - "docker-volume-backup.stop-during-backup=true"
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro
       - etc_certs:/etc/nginx/certs
@@ -86,20 +106,6 @@ services:
 #     expose:
 #       - "8008"
 
-  volume-backup:
-    image: offen/docker-volume-backup
-    restart: always
-    container_name: volume-backup
-    environment:
-      BACKUP_NAME: etc_wireguard
-      BACKUP_CRON_EXPRESSION: "0 0 * * *"
-      S3_BUCKET: ${AWS}
-      S3_ENDPOINT: ${ENDPOINT}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-    volumes:
-      - etc_wireguard:/backup:ro
-      - backup_data:/archive
 
 networks:
   network-container:
