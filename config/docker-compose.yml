@@ -1,5 +1,6 @@
 volumes:
   etc_wireguard:
+  grafana-storage:
   etc_certs:
   # save certifcate
   etc_acme:
@@ -45,8 +46,8 @@ services:
       - net.ipv6.conf.all.forwarding=1
       - net.ipv6.conf.default.forwarding=1
     environment:
-      - VIRTUAL_HOST=${WG_HOSTNAME_VPN}
-      - LETSENCRYPT_HOST=${WG_HOSTNAME_VPN}
+      - VIRTUAL_HOST=${HOSTNAME_VPN}
+      - LETSENCRYPT_HOST=${HOSTNAME_VPN}
       - LETSENCRYPT_EMAIL=${EMAIL}
       - VIRTUAL_PORT=51821
     depends_on:
@@ -88,7 +89,30 @@ services:
       - ./default_html:/usr/share/nginx/html
     networks:
       - network-container
-    
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - /etc/serverconfig/prometheus.yml:/etc/prometheus/prometheus.yml
+    restart: unless-stopped
+    networks:
+      - network-container
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: unless-stopped
+    environment:
+      - VIRTUAL_HOST=${HOSTNAME_GRAFANA}
+      - LETSENCRYPT_HOST=${HOSTNAME_GRAFANA}
+      - VIRTUAL_PORT=3000
+      - LETSENCRYPT_EMAIL=${EMAIL}
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    networks:
+      - network-container
+
 # synapse:
 #     image: matrixdotorg/synapse:latest
 #     container_name: synapse
