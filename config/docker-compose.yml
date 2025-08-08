@@ -22,6 +22,13 @@ services:
       - etc_acme:/backup/etc_acme:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
 
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+
   wg-easy:
     image: ghcr.io/wg-easy/wg-easy:15
     container_name: wg-easy
@@ -97,7 +104,7 @@ services:
       - /etc/serverconfig/prometheus.yml:/etc/prometheus/prometheus.yml
     restart: unless-stopped
     networks:
-      - network-container
+      - monitor-network
 
   grafana:
     image: grafana/grafana
@@ -112,6 +119,7 @@ services:
       - grafana-storage:/var/lib/grafana
     networks:
       - network-container
+      - monitor-network
 
 # synapse:
 #     image: matrixdotorg/synapse:latest
@@ -123,8 +131,8 @@ services:
 #       - ./data:/data
 #     environment:
 #       - SYNAPSE_CONFIG_PATH=/data/homeserver.yaml
-#       - VIRTUAL_HOST=notify.guezoloic.com
-#       - LETSENCRYPT_HOST=notify.guezoloic.com
+#       - VIRTUAL_HOST=${HOSTNAME_SYNAPSE}
+#       - LETSENCRYPT_HOST=${HOSTNAME_SYNAPSE}
 #       - LETSENCRYPT_EMAIL=${EMAIL}
 #       - VIRTUAL_PORT=8008
 #     expose:
@@ -133,4 +141,6 @@ services:
 
 networks:
   network-container:
+    external: false
+  monitor-network:
     external: false
