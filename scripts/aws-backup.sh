@@ -94,7 +94,7 @@ done < "$BACKUP"
 source /usr/local/bin/libs/notifications.sh
 
 if [[ "$BACKUP_SUCCESS" == true ]]; then
-    send_notification "<b>AWS Backup:</b> All files successfully backed up."
+    send_notification "<b>💿 AWS Backup 💿 :</b> All files successfully backed up."
 else
-    send_notification "<b>AWS Backup:</b> One or more files failed to back up. Check the log for details."
+    send_notification "<b>💿 AWS Backup 💿 :</b> One or more files failed to back up. Check the log for details."
 fi
