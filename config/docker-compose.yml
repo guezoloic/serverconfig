@@ -1,47 +1,115 @@
 volumes:
-  etc_wireguard:
-  grafana-storage:
-  etc_certs:
-  # save certifcate
-  etc_acme:
+  wireguard-volume:
+    name: wireguard-volume
+  grafana-volume:
+    name: grafana-volume
+  certs-volume:
+    name: certs-volume
+  acme-volume:  # save certifcates
+    name: acme-volume
+  mail-data-volume:
+    name: mail-data-volume
+  mail-state-volume:
+    name: mail-state-volume
 
 services:
   backup:
-    image: jareware/docker-volume-backup
-    container_name: backup-docker-container
+# --------------------------------
+#     Auto backup through S3
+# --------------------------------
+    image: offen/docker-volume-backup
+    container_name: backup-container
     restart: unless-stopped
     environment:
       AWS_S3_BUCKET_NAME: ${S3_BUCKET}
-      AWS_EXTRA_ARGS: --endpoint ${ENDPOINT}
+      AWS_ENDPOINT: ${ENDPOINT}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       BACKUP_CRON_EXPRESSION: "0 0 * * *"
+      BACKUP_RETENTION_DAYS: 3
     volumes:
-      - etc_wireguard:/backup/etc_wireguard:ro
-      - etc_certs:/backup/etc_certs:ro
-      - etc_acme:/backup/etc_acme:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - wireguard-volume:/backup/wireguard:ro
+      - grafana-volume:/backup/grafana:ro
+      - certs-volume:/backup/certs:ro
+      - acme-volume:/backup/acme:ro
+      - mail-data-volume:/backup/maildata:ro
+      - mail-state-volume:/backup/mailstate:ro
 
+# --------------------------------
+#     Auto update containers
+# --------------------------------
   watchtower:
     image: containrrr/watchtower
     container_name: watchtower
+    restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    restart: unless-stopped
 
+# --------------------------------
+#   ACME Companion for SSL certs
+# --------------------------------
+  acme-companion:
+    image: nginxproxy/acme-companion
+    container_name: acme-companion
+    restart: unless-stopped
+    environment:
+      - DEFAULT_EMAIL=${EMAIL}
+      - NGINX_PROXY_CONTAINER=nginx-proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - certs-volume:/etc/nginx/certs
+      - /etc/nginx/vhost.d
+      - ./default_html:/usr/share/nginx/html
+      - acme-volume:/etc/acme.sh
+    labels:
+      - "docker-volume-backup.stop-during-backup=true"
+    networks:
+      - proxy-network
+    depends_on:
+      - nginx-proxy
+
+# --------------------------------
+#          Reverse Proxy
+# --------------------------------
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy:alpine
+    container_name: nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - certs-volume:/etc/nginx/certs
+      - /etc/nginx/vhost.d
+      - ./default_html:/usr/share/nginx/html
+    labels:
+      - "docker-volume-backup.stop-during-backup=true"
+    networks:
+      - proxy-network
+
+# --------------------------------
+#            Website
+# --------------------------------
+  web:
+    build: ./guezoloic/website
+    container_name: guezoloic-web
+    restart: unless-stopped
+    environment:
+      - VIRTUAL_HOST=${HOSTNAME_WEBSITE}
+      - LETSENCRYPT_HOST=${HOSTNAME_WEBSITE}
+      - LETSENCRYPT_EMAIL=${EMAIL}
+    networks:
+      - proxy-network
+    depends_on:
+      - nginx-proxy
+
+# --------------------------------
+#         VPN Wireguard
+# --------------------------------
   wg-easy:
     image: ghcr.io/wg-easy/wg-easy:15
     container_name: wg-easy
-    networks:
-        - network-container
-    volumes:
-      - etc_wireguard:/etc/wireguard
-      - /lib/modules:/lib/modules:ro
-    ports:
-      - "51820:51820/udp"
-      - "51821:51821/tcp"
-    labels:
-      - "docker-volume-backup.stop-during-backup=true"
     restart: unless-stopped
     cap_add:
       - NET_ADMIN
@@ -53,56 +121,34 @@ services:
       - net.ipv6.conf.all.forwarding=1
       - net.ipv6.conf.default.forwarding=1
     environment:
+      - TZ=Europe/Paris
       - VIRTUAL_HOST=${HOSTNAME_VPN}
       - LETSENCRYPT_HOST=${HOSTNAME_VPN}
       - LETSENCRYPT_EMAIL=${EMAIL}
       - VIRTUAL_PORT=51821
-    depends_on:
-      - nginx-proxy
-
-  acme-companion:
-    image: nginxproxy/acme-companion
-    container_name: acme-companion
-    restart: unless-stopped
-    environment:
-      - DEFAULT_EMAIL=${EMAIL}
-      - NGINX_PROXY_CONTAINER=nginx-proxy
-    depends_on:
-      - nginx-proxy
-    labels:
-      - "docker-volume-backup.stop-during-backup=true"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - etc_certs:/etc/nginx/certs
-      - /etc/nginx/vhost.d
-      - ./default_html:/usr/share/nginx/html
-      - etc_acme:/etc/acme.sh
     networks:
-      - network-container
+      - proxy-network
+      - vpn-network
 
-  nginx-proxy:
-    image: nginxproxy/nginx-proxy:alpine
-    container_name: nginx-proxy
-    restart: unless-stopped
+    volumes:
+      - wireguard-volume:/etc/wireguard
+      - /lib/modules:/lib/modules:ro
     ports:
-      - "80:80"
-      - "443:443"
+      - "51820:51820/udp"
     labels:
       - "docker-volume-backup.stop-during-backup=true"
-    volumes:
-      - /var/run/docker.sock:/tmp/docker.sock:ro
-      - etc_certs:/etc/nginx/certs
-      - /etc/nginx/vhost.d
-      - ./default_html:/usr/share/nginx/html
-    networks:
-      - network-container
+    depends_on:
+      - nginx-proxy
 
+# --------------------------------
+#      Monitoring Prometheus
+# --------------------------------
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
+    restart: unless-stopped
     volumes:
       - /etc/serverconfig/prometheus.yml:/etc/prometheus/prometheus.yml
-    restart: unless-stopped
     networks:
       - monitor-network
 
@@ -116,9 +162,9 @@ services:
       - VIRTUAL_PORT=3000
       - LETSENCRYPT_EMAIL=${EMAIL}
     volumes:
-      - grafana-storage:/var/lib/grafana
+      - grafana-volume:/var/lib/grafana
     networks:
-      - network-container
+      - proxy-network
       - monitor-network
 
 # synapse:
@@ -138,9 +184,13 @@ services:
 #     expose:
 #       - "8008"
 
-
 networks:
-  network-container:
+  proxy-network:
+    name: proxy-network
     external: false
   monitor-network:
+    name: monitor-network
+    external: false
+  vpn-network:
+    name: vpn-network
     external: false
