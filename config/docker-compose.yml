@@ -96,8 +96,8 @@ services:
     container_name: guezoloic-web
     restart: unless-stopped
     environment:
-      - VIRTUAL_HOST=${HOSTNAME_WEBSITE}
-      - LETSENCRYPT_HOST=${HOSTNAME_WEBSITE}
+      - VIRTUAL_HOST=www.${HOSTNAME}
+      - LETSENCRYPT_HOST=${HOSTNAME}
       - LETSENCRYPT_EMAIL=${EMAIL}
     networks:
       - proxy-network
@@ -122,8 +122,8 @@ services:
       - net.ipv6.conf.default.forwarding=1
     environment:
       - TZ=Europe/Paris
-      - VIRTUAL_HOST=${HOSTNAME_VPN}
-      - LETSENCRYPT_HOST=${HOSTNAME_VPN}
+      - VIRTUAL_HOST=vpn.${HOSTNAME}
+      - LETSENCRYPT_HOST=vpn.${HOSTNAME}
       - LETSENCRYPT_EMAIL=${EMAIL}
       - VIRTUAL_PORT=51821
     networks:
@@ -157,8 +157,8 @@ services:
     container_name: grafana
     restart: unless-stopped
     environment:
-      - VIRTUAL_HOST=${HOSTNAME_GRAFANA}
-      - LETSENCRYPT_HOST=${HOSTNAME_GRAFANA}
+      - VIRTUAL_HOST=monitor.${HOSTNAME}
+      - LETSENCRYPT_HOST=monitor.${HOSTNAME}
       - VIRTUAL_PORT=3000
       - LETSENCRYPT_EMAIL=${EMAIL}
     volumes:

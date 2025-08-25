@@ -9,7 +9,7 @@ if [[ "--install" == $INSTALLED ]]; then
             docker-compose Installation\n\
 --------------------------------------------------"
 
-    ENV_LIST=("EMAIL" "HOSTNAME_VPN" "HOSTNAME_GRAFANA" "HOSTNAME_WEBSITE")
+    ENV_LIST=("EMAIL" "HOSTNAME")
 
     for env in "${ENV_LIST[@]}"; do
         read -p "Enter value for $env: " value
