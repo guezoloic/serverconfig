@@ -92,7 +92,7 @@ services:
 #            Website
 # --------------------------------
   web:
-    build: ./guezoloic/website
+    build: ./guezoloic/website # using guezoloic website repo
     container_name: guezoloic-web
     restart: unless-stopped
     environment:
