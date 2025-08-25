@@ -97,7 +97,7 @@ services:
     restart: unless-stopped
     environment:
       - VIRTUAL_HOST=www.${HOSTNAME}
-      - LETSENCRYPT_HOST=${HOSTNAME}
+      - LETSENCRYPT_HOST=www.${HOSTNAME}
       - LETSENCRYPT_EMAIL=${EMAIL}
     networks:
       - proxy-network
