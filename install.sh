@@ -43,9 +43,15 @@ for config in config/*; do
     filename=$(basename "$config")
     info_print "Moving $filename to $SCRIPT_FILE"
 
-    install $argument "$config" "$ETC_DIR/$filename"  -Dm755 \
-    && { info_print "$ETC_DIR/$filename installed." 6; } \
-    || { info_print "$ETC_DIR/$filename failed." 3; ISERROR=true; }
+    if [ -d "$config" ]; then
+        cp -r "$config" "$ETC_DIR/" \
+        && { info_print "$ETC_DIR/$filename installed (directory)." 6; } \
+        || { info_print "$ETC_DIR/$filename failed (directory)." 3; ISERROR=true; }
+    else
+        install -Dm755 "$config" "$ETC_DIR/$filename" \
+        && { info_print "$ETC_DIR/$filename installed." 6; } \
+        || { info_print "$ETC_DIR/$filename failed." 3; ISERROR=true; }
+    fi
 done
 
 if $ISERROR; then 
