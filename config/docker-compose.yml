@@ -21,7 +21,7 @@ services:
     container_name: backup-container
     restart: unless-stopped
     environment:
-      AWS_S3_BUCKET_NAME: ${S3_BUCKET}
+      AWS_S3_BUCKET_NAME: ${AWS}
       AWS_ENDPOINT: ${ENDPOINT}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
@@ -81,7 +81,7 @@ services:
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro
       - certs-volume:/etc/nginx/certs
-      - /etc/nginx/vhost.d
+      - ./vhost.d:/etc/nginx/vhost.d
       - ./default_html:/usr/share/nginx/html
     labels:
       - "docker-volume-backup.stop-during-backup=true"
@@ -96,8 +96,8 @@ services:
     container_name: guezoloic-web
     restart: unless-stopped
     environment:
-      - VIRTUAL_HOST=www.${HOSTNAME}
-      - LETSENCRYPT_HOST=www.${HOSTNAME}
+      - VIRTUAL_HOST=www.${HOSTNAME},${HOSTNAME}
+      - LETSENCRYPT_HOST=www.${HOSTNAME},${HOSTNAME}
       - LETSENCRYPT_EMAIL=${EMAIL}
     networks:
       - proxy-network
